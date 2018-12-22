@@ -1,4 +1,5 @@
 #ResPlicate Interpreter by Quintopia, based on code by nooodl
+
 from collections import deque
 import sys
 class PatternRepeated(LookupError):
@@ -19,7 +20,13 @@ def remember(q,count,prev = {},cyclenums = {}):
     cyclenums[copy]=count
 
 def run(q,haltonrepeat=True,quiet=True,prlen=False,maxlength=0,io=False,summary=False):
-    q= deque(q)
+    def log(string):
+        if io:
+            print >> sys.stderr, string
+        else:
+            print string
+
+    q = deque(q)
     count = 0; maxl = len(q); repeat = 0
     prev={}; cyclenums={}
     nocheck = (io and min(q)<0) or not haltonrepeat
@@ -27,10 +34,10 @@ def run(q,haltonrepeat=True,quiet=True,prlen=False,maxlength=0,io=False,summary=
     try:
         while len(q)>0 and (maxlength==0 or len(q)<=maxlength):                                 #4
             if len(q)>maxl: maxl=len(q)
-            if not quiet: print ' '.join(map(str, q)).join('()')
-            if prlen: print(len(q))
+            if not quiet: log(' '.join(map(str, q)).join('()'))
+            if prlen: log(len(q))
             if not nocheck: remember(q,count,prev,cyclenums)
-            if summary: print ' '.join(map(str, list(q)[0:q[0]+2])).join('()')
+            if summary: log(' '.join(map(str, list(q)[0:q[0]+2])).join('()'))
             x = popsafe(q); y = popsafe(q)                                                      #5,6
             if io and x==0:
                 if y>=0:
@@ -41,8 +48,8 @@ def run(q,haltonrepeat=True,quiet=True,prlen=False,maxlength=0,io=False,summary=
             count+=1
         if maxlength>0 and len(q)>maxlength:
             if len(q)>maxl: maxl=len(q)
-            if not quiet: print ' '.join(map(str, q)).join('()')
-            if prlen: print(len(q))
+            if not quiet: log(' '.join(map(str, q)).join('()'))
+            if prlen: log(len(q))
     except PatternRepeated as e: repeat = e.value
     except KeyboardInterrupt: raise KeyboardInterrupt(list(q),count,maxl,repeat)
     return (list(q),count,maxl,repeat)
@@ -58,20 +65,20 @@ if __name__=="__main__":
     parser.add_option('-f', '--file', help="Load a ResPlicate program from a file.", metavar="<filename>", action="store", dest="filename", type=str, default=None)
     parser.add_option('-o', '--command', help="Display only the numbers that were popped each cycle.", dest="summary", action="store_true", default=False)
     (options, args) = parser.parse_args()
-   
+  
     if options.filename is not None:
         try: openfile = open(options.filename,"r")
-        except IOError: print("File '"+options.filename+"' not found.");
+        except IOError: print >> sys.stderr, "File '"+options.filename+"' not found."
         else: args = openfile.read().split(); openfile.close()
     if len(args)>0:
         if len(args)==1: args=args[0].split()
         try: (final,count,maxl,repeat) = run(map(int, args),options.haltonrepeat,options.quiet,options.prlen,options.maxlength,options.io,options.summary)
-        except KeyboardInterrupt as e: print "Simulation interrupted by user."; (final, count, maxl, repeat) = e.args
+        except KeyboardInterrupt as e: print >> sys.stderr, "Simulation interrupted by user."; (final, count, maxl, repeat) = e.args
         except ValueError: parser.error("All arguments must be integers unless the -f flag is used to specify a file.")
         if options.quiet:
-            if len(final)<100: print "Final sequence: "+' '.join(map(str, final)).join('()')
-            else: print "Final sequence: "+(' '.join(map(str,final[0:100]))+"...").join('()')
-        if repeat>0: print "Pattern repeated with period "+str(repeat)+"."
-        print "Simulation proceeded for "+str(count)+" steps, with queue reaching a maximum length of "+str(maxl)+" and a final length of "+str(len(final))+"."
+            if len(final)<100: print >> sys.stderr, "Final sequence: "+' '.join(map(str, final)).join('()')
+            else: print >> sys.stderr, "Final sequence: "+(' '.join(map(str,final[0:100]))+"...").join('()')
+        if repeat>0: print >> sys.stderr, "Pattern repeated with period "+str(repeat)+"."
+        print >> sys.stderr, "Simulation proceeded for "+str(count)+" steps, with queue reaching a maximum length of "+str(maxl)+" and a final length of "+str(len(final))+"."
     else:
         parser.error("No program to execute.")
